@@ -1,0 +1,9 @@
+node_modules
+.vscode
+.secret.ropsten
+.secret.ethmainnet
+.secret.matictestnet
+.secret.maticmainnet
+yarn.lock
+package-lock.json
+build
