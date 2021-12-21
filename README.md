@@ -1,4 +1,4 @@
-# Pledge smart contract
+# Smart contract
 
 ## Installation
 
