@@ -7,6 +7,9 @@ import "@openzeppelin/contracts/utils/math/SafeMath.sol";
 abstract contract EIP712MetaTransaction is EIP712Base {
   using SafeMath for uint256;
 
+  string internal constant DOMAIN_NAME = "morpheus.app";
+  string internal constant DOMAIN_VERSION = "1";
+
   bytes32 private constant META_TRANSACTION_TYPEHASH =
     keccak256(
       bytes(
