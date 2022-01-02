@@ -7,7 +7,7 @@ import "../common/OwnPauseMeta.sol";
 import "./ILANDRegistry.sol";
 import "./PriceConsumerV3.sol";
 
-contract PrimaryMarketplace is PriceConsumerV3, OwnPauseMeta, ReentrancyGuard {
+contract PrimaryMarketPlace is PriceConsumerV3, OwnPauseMeta, ReentrancyGuard {
   using SafeERC20 for IERC20;
 
   // Receive the fund collected
@@ -55,29 +55,34 @@ contract PrimaryMarketplace is PriceConsumerV3, OwnPauseMeta, ReentrancyGuard {
     int256 landParcelLong
   );
 
-  constructor(
-    address erc20TokenAddress_,
-    address landRegistryAddress_,
-    address beneficiary_
-  ) EIP712Base(DOMAIN_NAME, DOMAIN_VERSION, block.chainid) {
+  constructor(address erc20TokenAddress_, address beneficiary_)
+    EIP712Base(DOMAIN_NAME, DOMAIN_VERSION, block.chainid)
+  {
     require(
       erc20TokenAddress_ != address(0),
-      "PrimaryMarketplace: Invalid erc20TokenAddress_ address"
-    );
-
-    require(
-      landRegistryAddress_ != address(0),
-      "PrimaryMarketplace: Invalid landRegistryAddress_ address"
+      "PrimaryMarketPlace: Invalid erc20TokenAddress_ address"
     );
 
     require(
       beneficiary_ != address(0),
-      "PrimaryMarketplace: Invalid beneficiary_ address"
+      "PrimaryMarketPlace: Invalid beneficiary_ address"
     );
 
     _erc20Token = IERC20(erc20TokenAddress_);
-    _landRegistry = ILANDRegistry(landRegistryAddress_);
+
     _beneficiary = payable(beneficiary_);
+  }
+
+  function setLandRegistryContractAddress(address landRegistryAddress_)
+    external
+    isAuthorized
+  {
+    require(
+      landRegistryAddress_ != address(0),
+      "PrimaryMarketPlace: Invalid landRegistryAddress_ address"
+    );
+
+    _landRegistry = ILANDRegistry(landRegistryAddress_);
   }
 
   function setLandCategoryPriceUsdCent(
@@ -86,12 +91,12 @@ contract PrimaryMarketplace is PriceConsumerV3, OwnPauseMeta, ReentrancyGuard {
   ) public isAuthorized {
     require(
       landCategoryPriceUsdCent_ > 0,
-      "PrimaryMarketplace: Invalid landCategoryPriceUsdCent_"
+      "PrimaryMarketPlace: Invalid landCategoryPriceUsdCent_"
     );
 
     require(
       landCategory_ != 0 && landCategory_ != 1 && landCategory_ != 2,
-      "PrimaryMarketplace: Invalid landCategory_"
+      "PrimaryMarketPlace: Invalid landCategory_"
     );
 
     _landCategoryPriceUsdCent[landCategory_] = landCategoryPriceUsdCent_;
@@ -107,7 +112,7 @@ contract PrimaryMarketplace is PriceConsumerV3, OwnPauseMeta, ReentrancyGuard {
   function setBeneficiary(address beneficiary_) external isAuthorized {
     require(
       beneficiary_ != address(0),
-      "PrimaryMarketplace: Invalid beneficiary_ address"
+      "PrimaryMarketPlace: Invalid beneficiary_ address"
     );
     _beneficiary = payable(beneficiary_);
   }
@@ -123,10 +128,10 @@ contract PrimaryMarketplace is PriceConsumerV3, OwnPauseMeta, ReentrancyGuard {
     view
     returns (uint256)
   {
-    require(landCategory_ > 0, "PrimaryMarketplace: invalid landCategory_");
+    require(landCategory_ > 0, "PrimaryMarketPlace: invalid landCategory_");
     require(
       _landCategoryPriceUsdCent[landCategory_] > 0,
-      "PrimaryMarketplace: land price for this category is not set"
+      "PrimaryMarketPlace: land price for this category is not set"
     );
 
     uint256 landPriceInERC20Tokens = (_landCategoryPriceUsdCent[landCategory_] *
@@ -140,10 +145,10 @@ contract PrimaryMarketplace is PriceConsumerV3, OwnPauseMeta, ReentrancyGuard {
     view
     returns (uint256)
   {
-    require(landCategory_ > 0, "PrimaryMarketplace: invalid landCategory_");
+    require(landCategory_ > 0, "PrimaryMarketPlace: invalid landCategory_");
     require(
       _landCategoryPriceUsdCent[landCategory_] > 0,
-      "PrimaryMarketplace: land price for this category is not set"
+      "PrimaryMarketPlace: land price for this category is not set"
     );
 
     uint256 ethPriceInUsdCent = getEthPriceInUsdCent();
@@ -162,7 +167,7 @@ contract PrimaryMarketplace is PriceConsumerV3, OwnPauseMeta, ReentrancyGuard {
   {
     require(
       landParcelLat_ != 0 && landParcelLong_ != 0,
-      "PrimaryMarketplace: Invalid landParcelLat_ or landParcelLong_"
+      "PrimaryMarketPlace: Invalid landParcelLat_ or landParcelLong_"
     );
 
     return _landCategoryPriceUsdCent[LAND_CATEGORY_CHEAP];
@@ -178,7 +183,7 @@ contract PrimaryMarketplace is PriceConsumerV3, OwnPauseMeta, ReentrancyGuard {
   ) external whenNotPaused isAuthorized nonReentrant {
     require(
       landParcelLat_ != 0 && landParcelLong_ != 0,
-      "PrimaryMarketplace: Invalid landParcelLat_ or landParcelLong_"
+      "PrimaryMarketPlace: Invalid landParcelLat_ or landParcelLong_"
     );
 
     uint256 landCategory = getLandCategory(landParcelLat_, landParcelLong_);
@@ -202,12 +207,12 @@ contract PrimaryMarketplace is PriceConsumerV3, OwnPauseMeta, ReentrancyGuard {
   {
     require(
       _erc20TokenPriceInUsdCent > 0,
-      "PrimaryMarketplace: ERC20 token price not set"
+      "PrimaryMarketPlace: ERC20 token price not set"
     );
 
     require(
       landParcelLat_ != 0 && landParcelLong_ != 0,
-      "PrimaryMarketplace: Invalid landParcelLat_ or landParcelLong_"
+      "PrimaryMarketPlace: Invalid landParcelLat_ or landParcelLong_"
     );
 
     uint256 landCategory = getLandCategory(landParcelLat_, landParcelLong_);
@@ -216,14 +221,14 @@ contract PrimaryMarketplace is PriceConsumerV3, OwnPauseMeta, ReentrancyGuard {
     // Check if user balance has enough tokens
     require(
       landPriceInERC20Tokens <= _erc20Token.balanceOf(_msgSender()),
-      "PrimaryMarketplace: user balance does not have enough ERC20 tokens"
+      "PrimaryMarketPlace: user balance does not have enough ERC20 tokens"
     );
 
     // Check if user has approved enough allowance
     require(
       landPriceInERC20Tokens <=
         _erc20Token.allowance(_msgSender(), address(this)),
-      "PrimaryMarketplace: user has not approved enough ERC20 tokens"
+      "PrimaryMarketPlace: user has not approved enough ERC20 tokens"
     );
 
     _erc20Token.safeTransferFrom(
@@ -255,7 +260,7 @@ contract PrimaryMarketplace is PriceConsumerV3, OwnPauseMeta, ReentrancyGuard {
   {
     require(
       landParcelLat_ != 0 && landParcelLong_ != 0,
-      "PrimaryMarketplace: Invalid landParcelLat_ or landParcelLong_"
+      "PrimaryMarketPlace: Invalid landParcelLat_ or landParcelLong_"
     );
 
     uint256 landCategory = getLandCategory(landParcelLat_, landParcelLong_);
@@ -264,7 +269,7 @@ contract PrimaryMarketplace is PriceConsumerV3, OwnPauseMeta, ReentrancyGuard {
     // Check if user-transferred amount is enough
     require(
       msg.value >= landPriceInWETH,
-      "PrimaryMarketplace: user-transferred amount not enough"
+      "PrimaryMarketPlace: user-transferred amount not enough"
     );
 
     // Transfer msg.value from user wallet to beneficiary

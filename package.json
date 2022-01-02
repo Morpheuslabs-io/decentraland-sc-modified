@@ -39,7 +39,7 @@
     "clean": "rimraf ./build",
     "build": "npm run clean && npx truffle compile --config truffle-config.js",
     "ganache": "npx ganache-cli -l 10000000 -d 'torch almost feed brother seat earth scorpion panther nuclear interest toy guide'",
-    "deploy-matictestnet": "npx truffle migrate --reset --network matictestnet",
-    "deploy-ganache": "npx truffle migrate --reset --network development"
+    "deploy-primary-marketplace-matictestnet": "npx truffle exec ./scripts/deploy_primary_marketplace.js --network matictestnet",
+    "init-primary-marketplace-matictestnet": "npx truffle exec ./scripts/init_primary_marketplace.js --network matictestnet"
   }
 }

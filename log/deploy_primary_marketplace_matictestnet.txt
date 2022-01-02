@@ -1,0 +1,7 @@
+decentraland-sc-modified$ yarn deploy-primary-marketplace-matictestnet
+yarn run v1.22.5
+$ npx truffle exec ./scripts/deploy_primary_marketplace.js --network matictestnet
+Using network 'matictestnet'.
+
+networkName: matictestnet
+PrimaryMarketPlace contract address: 0x44517DCeC3c5839Ac5Ff4De18944E1C6f1c2ae8F

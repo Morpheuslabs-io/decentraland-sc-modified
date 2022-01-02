@@ -2,6 +2,8 @@
 pragma solidity ^0.8.9;
 
 interface ILANDRegistry {
+  function authorizeDeploy(address beneficiary) external;
+
   // LAND can be assigned by the owner
   function assignNewParcel(
     int256 x,

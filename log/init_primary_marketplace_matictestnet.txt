@@ -1,0 +1,10 @@
+decentraland-sc-modified$ yarn init-primary-marketplace-matictestnet
+yarn run v1.22.5
+$ npx truffle exec ./scripts/init_primary_marketplace.js --network matictestnet
+Using network 'matictestnet'.
+
+PrimaryMarketPlace contract address: 0x44517DCeC3c5839Ac5Ff4De18944E1C6f1c2ae8F
+landRegistryContract contract address: 0x843729bBb5bD497f03Be9073BeE98E8B01E293c0
+primaryMarketPlaceContract.setLandRegistryContractAddress Transaction: 0xb66f38e3a9a7e4a5273cd742f71326a1ca6852a630523e6897abc8f54a81048a
+landRegistryContract.authorizeDeploy Transaction: 0x61e5b7530fa4cd464ceeb66189b7a4651425442df37429cc824dcbe34c8f7d9b
+Done in 24.66s.
