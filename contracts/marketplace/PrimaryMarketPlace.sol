@@ -16,6 +16,9 @@ contract PrimaryMarketPlace is PriceConsumerV3, OwnPauseMeta, ReentrancyGuard {
   // ERC20 token used as payment option
   IERC20 public _erc20Token;
 
+  // WETH token used as payment option
+  IERC20 public _weth;
+
   // ILANDRegistry contract
   ILANDRegistry public _landRegistry;
 
@@ -55,22 +58,37 @@ contract PrimaryMarketPlace is PriceConsumerV3, OwnPauseMeta, ReentrancyGuard {
     int256 landParcelLong
   );
 
-  constructor(address erc20TokenAddress_, address beneficiary_)
-    EIP712Base(DOMAIN_NAME, DOMAIN_VERSION, block.chainid)
-  {
-    require(
-      erc20TokenAddress_ != address(0),
-      "PrimaryMarketPlace: Invalid erc20TokenAddress_ address"
-    );
-
+  constructor(
+    address beneficiary_,
+    address wethAddress_,
+    address erc20TokenAddress_
+  ) EIP712Base(DOMAIN_NAME, DOMAIN_VERSION, block.chainid) {
     require(
       beneficiary_ != address(0),
-      "PrimaryMarketPlace: Invalid beneficiary_ address"
+      "PrimaryMarketPlace: Invalid beneficiary_"
     );
 
+    require(
+      wethAddress_ != address(0),
+      "PrimaryMarketPlace: Invalid wethAddress_"
+    );
+
+    require(
+      erc20TokenAddress_ != address(0),
+      "PrimaryMarketPlace: Invalid erc20TokenAddress_"
+    );
+
+    _weth = IERC20(wethAddress_);
     _erc20Token = IERC20(erc20TokenAddress_);
 
     _beneficiary = payable(beneficiary_);
+  }
+
+  // Over-ride _msgSender() function of contract Context inherited by ERC721
+  // with  msgSender() function of contract EIP712MetaTransaction
+  // From now on, use _msgSender() in replacement of msg.sender
+  function _msgSender() internal view override returns (address sender) {
+    return msgSender();
   }
 
   function setLandRegistryContractAddress(address landRegistryAddress_)
@@ -93,12 +111,6 @@ contract PrimaryMarketPlace is PriceConsumerV3, OwnPauseMeta, ReentrancyGuard {
       landCategoryPriceUsdCent_ > 0,
       "PrimaryMarketPlace: Invalid landCategoryPriceUsdCent_"
     );
-
-    require(
-      landCategory_ != 0 && landCategory_ != 1 && landCategory_ != 2,
-      "PrimaryMarketPlace: Invalid landCategory_"
-    );
-
     _landCategoryPriceUsdCent[landCategory_] = landCategoryPriceUsdCent_;
   }
 
@@ -170,7 +182,21 @@ contract PrimaryMarketPlace is PriceConsumerV3, OwnPauseMeta, ReentrancyGuard {
       "PrimaryMarketPlace: Invalid landParcelLat_ or landParcelLong_"
     );
 
-    return _landCategoryPriceUsdCent[LAND_CATEGORY_CHEAP];
+    return LAND_CATEGORY_CHEAP;
+  }
+
+  function _validateLandBeforeBuy(int256 landParcelLat_, int256 landParcelLong_)
+    private
+  {
+    require(
+      landParcelLat_ != 0 && landParcelLong_ != 0,
+      "PrimaryMarketPlace: Invalid landParcelLat_ or landParcelLong_"
+    );
+
+    require(
+      _landRegistry.exists(landParcelLat_, landParcelLong_) == false,
+      "PrimaryMarketPlace: This land already bought"
+    );
   }
 
   // Fiat payment is verified before calling this function with authorized wallet
@@ -181,12 +207,9 @@ contract PrimaryMarketPlace is PriceConsumerV3, OwnPauseMeta, ReentrancyGuard {
     address buyer_,
     uint256 landPriceUsdCent_
   ) external whenNotPaused isAuthorized nonReentrant {
-    require(
-      landParcelLat_ != 0 && landParcelLong_ != 0,
-      "PrimaryMarketPlace: Invalid landParcelLat_ or landParcelLong_"
-    );
-
     uint256 landCategory = getLandCategory(landParcelLat_, landParcelLong_);
+
+    _validateLandBeforeBuy(landParcelLat_, landParcelLong_);
 
     _landRegistry.assignNewParcel(landParcelLat_, landParcelLong_, buyer_);
 
@@ -210,10 +233,7 @@ contract PrimaryMarketPlace is PriceConsumerV3, OwnPauseMeta, ReentrancyGuard {
       "PrimaryMarketPlace: ERC20 token price not set"
     );
 
-    require(
-      landParcelLat_ != 0 && landParcelLong_ != 0,
-      "PrimaryMarketPlace: Invalid landParcelLat_ or landParcelLong_"
-    );
+    _validateLandBeforeBuy(landParcelLat_, landParcelLong_);
 
     uint256 landCategory = getLandCategory(landParcelLat_, landParcelLong_);
     uint256 landPriceInERC20Tokens = getLandPriceInErc20Tokens(landCategory);
@@ -254,26 +274,21 @@ contract PrimaryMarketPlace is PriceConsumerV3, OwnPauseMeta, ReentrancyGuard {
 
   function buyLandInWETH(int256 landParcelLat_, int256 landParcelLong_)
     external
-    payable
     whenNotPaused
     nonReentrant
   {
-    require(
-      landParcelLat_ != 0 && landParcelLong_ != 0,
-      "PrimaryMarketPlace: Invalid landParcelLat_ or landParcelLong_"
-    );
+    _validateLandBeforeBuy(landParcelLat_, landParcelLong_);
 
     uint256 landCategory = getLandCategory(landParcelLat_, landParcelLong_);
     uint256 landPriceInWETH = getLandPriceInWETH(landCategory);
 
-    // Check if user-transferred amount is enough
+    // Check if user has approved enough allowance
     require(
-      msg.value >= landPriceInWETH,
-      "PrimaryMarketPlace: user-transferred amount not enough"
+      landPriceInWETH <= _weth.allowance(_msgSender(), address(this)),
+      "PrimaryMarketPlace: user has not approved enough WETH tokens"
     );
 
-    // Transfer msg.value from user wallet to beneficiary
-    _beneficiary.transfer(landPriceInWETH);
+    _weth.safeTransferFrom(_msgSender(), _beneficiary, landPriceInWETH);
 
     _landRegistry.assignNewParcel(
       landParcelLat_,

@@ -4,4 +4,5 @@ $ npx truffle exec ./scripts/deploy_primary_marketplace.js --network matictestne
 Using network 'matictestnet'.
 
 networkName: matictestnet
-PrimaryMarketPlace contract address: 0x44517DCeC3c5839Ac5Ff4De18944E1C6f1c2ae8F
+PrimaryMarketPlace contract address: 0x778584B9Ee5b717490b5bD483cdD557695e01D53
+Done in 13.54s.
